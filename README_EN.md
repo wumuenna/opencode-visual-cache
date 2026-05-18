@@ -43,7 +43,7 @@
 
 ### Option 1: OpenCode Command (recommended)
 
-Press **`Shift + P`** in OpenCode to open the command palette, search **`install plugin`**, then type:
+Press **`Ctrl + P`** in OpenCode to open the command palette, search **`install plugin`**, then type:
 
 ```
 opencode-visual-cache

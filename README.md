@@ -42,7 +42,7 @@
 
 ### 方式一：OpenCode 命令安装（推荐）
 
-在 OpenCode 中按 **`Shift + P`** 打开命令面板，搜索 **`install plugin`**，输入：
+在 OpenCode 中按 **`Ctrl + P`** 打开命令面板，搜索 **`install plugin`**，输入：
 
 ```
 opencode-visual-cache
