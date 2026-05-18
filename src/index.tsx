@@ -270,7 +270,7 @@ function TokenCachePanel(props: {
     return {
       hitRate, read, write, freshInput: input, output,
       cost, saved, model, inputRate, cacheReadRate, hasPricing,
-      hasData: read > 0 || write > 0 || cost > 0,
+      hasData: read > 0 || write > 0 || input > 0 || output > 0 || cost > 0,
     }
   })
 
