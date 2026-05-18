@@ -40,13 +40,25 @@
 
 ## 安装
 
-### 1. 安装插件
+### 方式一：OpenCode 命令安装（推荐）
+
+在 OpenCode 中按 **`Shift + P`** 打开命令面板，搜索 **`install plugin`**，输入：
+
+```
+opencode-visual-cache
+```
+
+回车即可完成安装与配置。
+
+### 方式二：手动安装
+
+**1. 安装插件**
 
 ```bash
 npm install -g opencode-visual-cache
 ```
 
-### 2. 配置 TUI 插件
+**2. 配置 TUI 插件**
 
 创建或编辑 `~/.config/opencode/tui.jsonc`：
 
@@ -57,7 +69,7 @@ npm install -g opencode-visual-cache
 }
 ```
 
-### 3. 重启 OpenCode
+### 重启 OpenCode
 
 进入任意 session，侧边栏即可看到缓存统计面板。
 
