@@ -66,6 +66,7 @@ const LANG_ZH = DEBUG_LANG
 const T = LANG_ZH ? {
   title:      "缓存统计",
   hit:        "命中率",
+  totalHit:   "总命中:",
   read:       "缓存读:",
   write:      "缓存写:",
   miss:       "未命中:",
@@ -82,6 +83,7 @@ const T = LANG_ZH ? {
 } as const : {
   title:      "Token Cache",
   hit:        "Hit",
+  totalHit:   "Total Hit:",
   read:       "Read:",
   write:      "Write:",
   miss:       "Miss:",
@@ -273,9 +275,10 @@ function TokenCachePanel(props: {
     }
 
     // `input` from the API represents fresh (non-cached) tokens.
+    const hitRate = lastMsgHitRate >= 0 ? lastMsgHitRate : 0
     // Total context = fresh + cache.read.
     const totalInput = input + read
-    const hitRate = totalInput > 0 ? (read / totalInput) * 100 : 0
+    const sessionHitRate = totalInput > 0 ? (read / totalInput) * 100 : 0
     const model = mid.split("/").pop() ?? mid
     const hasPricing = inputRate > 0 || cacheReadRate > 0
 
@@ -293,6 +296,7 @@ function TokenCachePanel(props: {
       hasData: read > 0 || write > 0 || input > 0 || output > 0 || cost > 0,
       trend, hasTrendData,
       providerName,
+      sessionHitRate,
     }
   })
 
@@ -395,6 +399,11 @@ function TokenCachePanel(props: {
                 {" "}{trendLabel(d().trend)}
               </span>
             </Show>
+          </text>
+
+          {/* session cumulative hit rate */}
+          <text fg={pal().muted}>
+            {justify(T.totalHit, d().sessionHitRate.toFixed(1) + "%")}
           </text>
 
           {/* token breakdown */}
