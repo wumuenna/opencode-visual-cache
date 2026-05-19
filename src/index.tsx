@@ -98,6 +98,8 @@ const T = LANG_ZH ? {
   distRes:    "Tool 结果:",
   distTotal:  "总计:",
   distOut:    "输出:",
+  secDetail:  "明细",
+  secModel:   "模型",
 } as const : {
   title:      "Token Cache",
   hit:        "Hit",
@@ -125,6 +127,8 @@ const T = LANG_ZH ? {
   distRes:    "Tool Result:",
   distTotal:  "Total:",
   distOut:    "Output:",
+  secDetail:  "Detail",
+  secModel:   "Model",
 } as const
 
 // ── color helpers ────────────────────────────────────────────────
@@ -286,7 +290,9 @@ function TokenCachePanel(props: {
 }): JSX.Element {
   const [panelWidth, setPanelWidth] = createSignal(DEFAULT_PANEL_WIDTH)
   const [open, setOpen] = createSignal(true)
-  const [distOpen, setDistOpen] = createSignal(false)
+  const [detailOpen, setDetailOpen] = createSignal(true)
+  const [modelOpen, setModelOpen] = createSignal(true)
+  const [distOpen, setDistOpen] = createSignal(true)
   let boxEl: any
 
   // ── scan session messages reactively ──
@@ -513,6 +519,20 @@ function TokenCachePanel(props: {
     return label + " ".repeat(gap) + value + (unit ? " " + unit : "")
   }
 
+  // section header: arrow + title + separator tail — clickable toggle
+  const sectionHead = (label: string, expanded: boolean, onClick: () => void): JSX.Element => {
+    const arrow = expanded ? "\u25be " : "\u25b8 "
+    const headW = visualWidth(arrow + label)
+    const tail = sep().slice(headW > sep().length ? 0 : headW)
+    return (
+      <text onMouseUp={onClick}>
+        <span style={{ fg: pal().muted }}>{arrow}</span>
+        <span style={{ fg: pal().primary }}><b>{label}</b></span>
+        <span style={{ fg: pal().muted }}>{tail}</span>
+      </text>
+    )
+  }
+
   return (
     <box
       border
@@ -587,76 +607,70 @@ function TokenCachePanel(props: {
             {justify(T.totalHit, (Math.floor(data().sessionHitRate * 10) / 10).toFixed(1) + "%")}
           </text>
 
-          {/* token breakdown */}
-          <Show when={data().read > 0}>
-            <text fg={pal().muted}>
-              {justify(T.read,  fmt(data().read),         T.tok)}
-            </text>
-          </Show>
-          <Show when={data().write > 0}>
-            <text fg={pal().muted}>
-              {justify(T.write, fmt(data().write),        T.tok)}
-            </text>
-          </Show>
-          <text fg={pal().muted}>
-            {justify(T.miss,  fmt(data().freshInput),   T.tok)}
-          </text>
-          <text fg={pal().muted}>
-            {justify(T.out,   fmt(data().output),       T.tok)}
-          </text>
+          {/* ── detail section (collapsible, default open) ── */}
+          {sectionHead(T.secDetail, detailOpen(), () => setDetailOpen((o) => !o))}
 
-          <text fg={pal().muted}>{sep()}</text>
-
-          {/* cost */}
-          <text fg={pal().text}>
-            {justify(T.cost,  fmtCost(data().cost))}
-          </text>
-
-          {/* saved */}
-          <Show when={data().saved > 0}>
-            <text>
-              <span style={{ fg: pal().muted }}>{T.saved}</span>
-              <span>{" ".repeat(Math.max(1, panelWidth() - GUTTER - visualWidth(T.saved) - visualWidth("~" + fmtCost(data().saved))))}</span>
-              <span style={{ fg: pal().success }}>~{fmtCost(data().saved)}</span>
-            </text>
-          </Show>
-
-          {/* provider */}
-          <Show when={data().providerName}>
-            <text fg={pal().muted}>
-              {justify(T.provider, data().providerName)}
-            </text>
-          </Show>
-
-          {/* model */}
-          <text fg={pal().muted}>
-            {justify(T.model, data().model)}
-          </text>
-
-          {/* rates */}
-          <Show when={data().hasPricing}>
-            <text fg={pal().muted}>
-              {justify(T.rate, "$" + data().inputRate.toFixed(2) + "/M " + T.inputRate)}
-            </text>
-            <Show when={data().cacheReadRate > 0}>
+          <Show when={detailOpen()}>
+            <Show when={data().read > 0}>
               <text fg={pal().muted}>
-                {justify("", "$" + data().cacheReadRate.toFixed(2) + "/M " + T.cacheRate)}
+                {justify(T.read,  fmt(data().read),         T.tok)}
               </text>
             </Show>
-            <Show when={data().cacheWriteRate > 0}>
+            <Show when={data().write > 0}>
               <text fg={pal().muted}>
-                {justify("", "$" + data().cacheWriteRate.toFixed(2) + "/M " + T.writeRate)}
+                {justify(T.write, fmt(data().write),        T.tok)}
+              </text>
+            </Show>
+            <text fg={pal().muted}>
+              {justify(T.miss,  fmt(data().freshInput),   T.tok)}
+            </text>
+            <text fg={pal().muted}>
+              {justify(T.out,   fmt(data().output),       T.tok)}
+            </text>
+            <Show when={data().saved > 0}>
+              <text>
+                <span style={{ fg: pal().muted }}>{T.saved}</span>
+                <span>{" ".repeat(Math.max(1, panelWidth() - GUTTER - visualWidth(T.saved) - visualWidth("~" + fmtCost(data().saved))))}</span>
+                <span style={{ fg: pal().success }}>~{fmtCost(data().saved)}</span>
               </text>
             </Show>
           </Show>
 
-          {/* ── token distribution (in-process, second-level collapse) ── */}
+          {/* ── model section (collapsible, default open) ── */}
+          {sectionHead(T.secModel, modelOpen(), () => setModelOpen((o) => !o))}
+
+          <Show when={modelOpen()}>
+            <text fg={pal().text}>
+              {justify(T.cost,  fmtCost(data().cost))}
+            </text>
+            <Show when={data().providerName}>
+              <text fg={pal().muted}>
+                {justify(T.provider, data().providerName)}
+              </text>
+            </Show>
+            <text fg={pal().muted}>
+              {justify(T.model, data().model)}
+            </text>
+            <Show when={data().hasPricing}>
+              <text fg={pal().muted}>
+                {justify(T.rate, "$" + data().inputRate.toFixed(2) + "/M " + T.inputRate)}
+              </text>
+              <Show when={data().cacheReadRate > 0}>
+                <text fg={pal().muted}>
+                  {justify("", "$" + data().cacheReadRate.toFixed(2) + "/M " + T.cacheRate)}
+                </text>
+              </Show>
+              <Show when={data().cacheWriteRate > 0}>
+                <text fg={pal().muted}>
+                  {justify("", "$" + data().cacheWriteRate.toFixed(2) + "/M " + T.writeRate)}
+                </text>
+              </Show>
+            </Show>
+          </Show>
+
+          {/* ── token distribution (collapsible, default open) ── */}
           <Show when={data().hasDistData}>
-            <text fg={pal().muted}>{sep()}</text>
-            <text onMouseUp={() => setDistOpen((o) => !o)}>
-              <span style={{ fg: pal().muted }}>{distOpen() ? "\u25be " : "\u25b8 "}</span>
-              <span style={{ fg: pal().primary }}><b>{T.distTitle}</b></span>
-            </text>
+            {sectionHead(T.distTitle, distOpen(), () => setDistOpen((o) => !o))}
             <Show when={distOpen()}>
             <Show when={data().dist.system > 0}>
               <text fg={pal().muted}>
