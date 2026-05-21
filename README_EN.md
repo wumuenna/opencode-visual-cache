@@ -42,10 +42,12 @@ If you find this plugin useful, a ⭐ would mean a lot — thank you!<br>
 - **Model Pricing**: Current model's input / cache-read rates (from provider config)
 - **Collapsible**: Click title to fold into one line
 - **Adaptive Colors**: ≥85% green · ≥70% orange · <70% red, auto-desaturated from theme
-- **Token Distribution**: Per-role (system / user / agent instr / tool call / tool result) parseable token breakdown
+- **Token Distribution**: Per-role (system / user / agent instr / tool call / tool result) estimated token breakdown
 - **Collapsible Sections**: Detail, model, and token distribution fold independently
 - **Persistent Fold State**: Fold preferences remembered across restarts
 - **Language**: Auto-detects system locale
+- **Multi-currency**: Switch via `/cache-currency` — costs and savings convert in real time
+- **Slash Commands**: `/cache-rate` `/cache-section` `/cache-config` for live panel configuration
 
 ---
 
@@ -83,6 +85,48 @@ Create or edit `~/.config/opencode/tui.jsonc`:
 ### Restart OpenCode
 
 Open any session — the cache stats panel appears in the sidebar.
+
+---
+
+## Usage Guide
+
+### 1.1 Slash Commands
+
+The plugin supports slash commands and command palette (`Ctrl + P`) for runtime configuration. All changes take effect immediately and are persisted:
+
+| Command | Function | How to use |
+|---------|----------|------------|
+| `/cache-currency` | Switch currency | Pick from a list (USD / CNY / EUR / JPY / GBP / KRW); default exchange rate auto-filled |
+| `/cache-rate` | Adjust exchange rate | Enter a custom rate (e.g. `7.2` for CNY) |
+| `/cache-section` | Toggle sections | Independently show/hide Detail, Model & Pricing, or Token Distribution |
+| `/cache-config` | View current config | Displays currency, rate, and section visibility |
+
+Switching currency automatically applies a built-in approximate exchange rate (USD-based). Override it anytime with `/cache-rate`.
+
+### 1.2 Currency & Exchange Rate
+
+Cost display supports multiple currencies:
+
+| Code | Symbol | Default rate (1 USD = ?) |
+|------|--------|-------------------------|
+| USD | `$` | 1 |
+| CNY | `¥` | 7.2 |
+| EUR | `€` | 0.92 |
+| JPY | `JP¥` | 150 |
+| GBP | `£` | 0.79 |
+| KRW | `₩` | 1350 |
+
+> The rate applies to session cost, cache savings, and per-million pricing — consistently across the panel.
+
+### 1.3 Section Visibility
+
+Three sub-sections can be toggled independently to save sidebar space:
+
+- **Token Detail**: cache read / write / miss / output
+- **Model & Pricing**: cost / provider / model name / per-million rates
+- **Estimated Token Dist.**: per-role token breakdown
+
+Toggled via `/cache-section` — takes effect instantly, no restart required.
 
 ---
 
