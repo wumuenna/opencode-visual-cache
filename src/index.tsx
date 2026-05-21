@@ -306,6 +306,23 @@ interface TokenDist {
 // Sidebar component
 // ---------------------------------------------------------------------------
 
+/** Module-level config signals — shared between the TUI component and slash
+ *  commands so that runtime changes take effect immediately without restart. */
+const [currencySymbol, setCurrencySymbol] = createSignal("$")
+const [exchangeRate, setExchangeRate] = createSignal(1)
+const [sectionDetail, setSectionDetail] = createSignal(true)
+const [sectionModel, setSectionModel] = createSignal(true)
+const [sectionDist, setSectionDist] = createSignal(true)
+
+const CURRENCIES: Record<string, string> = {
+  USD: "$", CNY: "¥", EUR: "€", JPY: "JP¥", GBP: "£", KRW: "₩",
+}
+/** Approximate USD exchange rates — used as defaults when switching currency.
+ *  Users can override via /cache-rate.  Last updated 2026-05. */
+const DEFAULT_RATES: Record<string, number> = {
+  USD: 1, CNY: 7.2, EUR: 0.92, JPY: 150, GBP: 0.79, KRW: 1350,
+}
+
 const MIN_PANEL_WIDTH = 20
 const DEFAULT_PANEL_WIDTH = 26
 /** Horizontal space eaten by border (1+1) + padding (2+2). */
@@ -330,11 +347,6 @@ function TokenCachePanel(props: {
   const [detailOpen, setDetailOpen] = createSignal(true)
   const [modelOpen, setModelOpen] = createSignal(true)
   const [distOpen, setDistOpen] = createSignal(false)
-  const [currencySymbol, setCurrencySymbol] = createSignal("$")
-  const [exchangeRate, setExchangeRate] = createSignal(1)
-  const [sectionDetail, setSectionDetail] = createSignal(true)
-  const [sectionModel, setSectionModel] = createSignal(true)
-  const [sectionDist, setSectionDist] = createSignal(true)
   let boxEl: any
 
   // ── scan session messages reactively ──
@@ -731,16 +743,16 @@ function TokenCachePanel(props: {
             </text>
             <Show when={data().hasPricing}>
               <text fg={pal().muted}>
-                {justify(T.rate, "$" + data().inputRate.toFixed(2) + "/M " + T.inputRate)}
+                {justify(T.rate, currencySymbol() + (data().inputRate * exchangeRate()).toFixed(2) + "/M " + T.inputRate)}
               </text>
               <Show when={data().cacheReadRate > 0}>
                 <text fg={pal().muted}>
-                  {justify("", "$" + data().cacheReadRate.toFixed(2) + "/M " + T.cacheRate)}
+                  {justify("", currencySymbol() + (data().cacheReadRate * exchangeRate()).toFixed(2) + "/M " + T.cacheRate)}
                 </text>
               </Show>
               <Show when={data().cacheWriteRate > 0}>
                 <text fg={pal().muted}>
-                  {justify("", "$" + data().cacheWriteRate.toFixed(2) + "/M " + T.writeRate)}
+                  {justify("", currencySymbol() + (data().cacheWriteRate * exchangeRate()).toFixed(2) + "/M " + T.writeRate)}
                 </text>
             </Show>
           </Show>
@@ -819,10 +831,6 @@ const tui: TuiPlugin = async (api: TuiPluginApi) => {
 
   // ── slash commands for runtime config ──
   const KV_PREFIX = "cache_panel"
-  const CURRENCIES: Record<string, string> = {
-    USD: "$", CNY: "¥", EUR: "€", JPY: "¥", GBP: "£", KRW: "₩",
-  }
-
   api.command?.register(() => [
     {
       title: "Cache: Set Currency",
@@ -835,12 +843,16 @@ const tui: TuiPlugin = async (api: TuiPluginApi) => {
             title="Select Currency"
             options={Object.entries(CURRENCIES).map(([code, sym]) => ({
               title: `${code}  (${sym})`,
-              value: sym,
+              value: code,
             }))}
             onSelect={(opt) => {
-              api.kv.set(`${KV_PREFIX}.currency`, opt.value)
-              api.kv.set(`${KV_PREFIX}.rate`, 1)
-              api.ui.toast({ message: `Currency set to ${opt.value} (rate reset to 1)` })
+              const sym = CURRENCIES[opt.value] ?? "$"
+              const defRate = DEFAULT_RATES[opt.value] ?? 1
+              api.kv.set(`${KV_PREFIX}.currency`, sym)
+              api.kv.set(`${KV_PREFIX}.rate`, defRate)
+              setCurrencySymbol(sym)
+              setExchangeRate(defRate)
+              api.ui.toast({ message: `Currency: ${opt.value} (${sym}), rate: ${defRate}` })
               dialog?.clear()
             }}
           />
@@ -863,6 +875,7 @@ const tui: TuiPlugin = async (api: TuiPluginApi) => {
               const n = parseFloat(val)
               if (n > 0) {
                 api.kv.set(`${KV_PREFIX}.rate`, n)
+                setExchangeRate(n)
                 api.ui.toast({ message: `Exchange rate set to ${n}` })
               }
               dialog?.clear()
@@ -892,7 +905,10 @@ const tui: TuiPlugin = async (api: TuiPluginApi) => {
               const key = `${KV_PREFIX}.section.${opt.value}`
               const cur = Boolean(api.kv.get(key, true))
               api.kv.set(key, !cur)
-              api.ui.toast({ message: `${opt.value} section ${!cur ? "shown" : "hidden"} (restart session or toggle panel to apply)` })
+              if (opt.value === "detail") setSectionDetail(!cur)
+              if (opt.value === "model")  setSectionModel(!cur)
+              if (opt.value === "dist")   setSectionDist(!cur)
+              api.ui.toast({ message: `${opt.value} section ${!cur ? "shown" : "hidden"}` })
               dialog?.clear()
             }}
           />
