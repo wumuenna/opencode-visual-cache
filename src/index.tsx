@@ -439,6 +439,7 @@ function TokenCachePanel(props: {
         const agentCfg = agents?.[agentName] as Record<string, unknown> | undefined
         const sysPrompt = typeof agentCfg?.prompt === "string" ? agentCfg.prompt : ""
         if (sysPrompt) dist.system = estimateTokens(sysPrompt)
+        let lastAssMsg: AssistantMessage | undefined
         for (const msg of msgs) {
           if (msg.role === "user") {
             const um = msg as UserMessage; if (um.system) dist.system += estimateTokens(um.system)
@@ -449,10 +450,8 @@ function TokenCachePanel(props: {
             }
           } else if (msg.role === "assistant") {
             const am = msg as AssistantMessage
+            lastAssMsg = am
             dist.output += num(am.tokens?.output)
-            // Message-level tokens survive compaction; step-finish parts can be removed.
-            dist.apiInput += num(am.tokens?.input)
-            dist.apiOutput += num(am.tokens?.output)
             let parts: readonly Part[] = []; try { parts = props.api.state.part(msg.id) } catch {}
             for (const p of parts) {
               if (p.type === "tool") {
@@ -466,6 +465,9 @@ function TokenCachePanel(props: {
             }
           }
         }
+        // 取最后一条 assistant 消息的总输入（含缓存读）作为当前 context 大小
+        dist.apiInput = num(lastAssMsg?.tokens?.input) + num(lastAssMsg?.tokens?.cache?.read)
+        dist.apiOutput = num(lastAssMsg?.tokens?.output)
         const totalInput = dist.system + dist.user + dist.agent + dist.toolCall + dist.toolResult
         const overhead = Math.max(0, dist.apiInput - totalInput)
         if (overhead > 0) {
