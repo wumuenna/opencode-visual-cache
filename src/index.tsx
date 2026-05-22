@@ -633,8 +633,14 @@ function TokenCachePanel(props: {
     if (props.api.kv.ready) {
       doRestore()
     } else {
+      // Poll kv.ready with a 1-second timeout to avoid infinite busy-wait
+      // on platforms where kv initialisation may be delayed (Linux single-thread
+      // mode, session switch storms, etc.).
+      const MAX_POLL = 100
+      let tries = 0
       const pollRestore = () => {
         if (!props.api.kv.ready) {
+          if (++tries > MAX_POLL) { doRestore(); return }
           setTimeout(pollRestore, 10)
           return
         }
@@ -643,13 +649,17 @@ function TokenCachePanel(props: {
       pollRestore()
     }
 
-    const unsubPart = props.api.event.on("message.part.updated", () => {
-      setPartVersion((v) => v + 1)
-    })
-    const unsubMsg = props.api.event.on("message.updated", () => {
-      setPartVersion((v) => v + 1)
-    })
-    onCleanup(() => { unsubPart(); unsubMsg() })
+    // Debounce partVersion updates so that event bursts during session
+    // switching / streaming don't cause data() to re-compute on every
+    // single event (up to hundreds per second on Linux single-thread).
+    let partTimer: ReturnType<typeof setTimeout> | undefined
+    const bumpPartVersion = () => {
+      clearTimeout(partTimer)
+      partTimer = setTimeout(() => setPartVersion((v) => v + 1), 100)
+    }
+    const unsubPart = props.api.event.on("message.part.updated", bumpPartVersion)
+    const unsubMsg = props.api.event.on("message.updated", bumpPartVersion)
+    onCleanup(() => { clearTimeout(partTimer); unsubPart(); unsubMsg() })
   })
 
   // ── colours ──
