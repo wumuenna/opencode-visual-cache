@@ -277,17 +277,18 @@ function estimateTokens(text: string): number {
     else ascii++
   }
 
-  // Tighten the ASCII ratio for structured content where punctuation is
-  // token-dense.  JSON key-value patterns and code keywords are strong
-  // signals that the default 4:1 ratio will materially under-estimate.
+  // Real BPE tokenizers (cl100k_base, o200k_base) average ~3.5-4.0
+  // ASCII chars/token for both JSON and source code — close to prose.
+  // The old 2.0 / 2.5 ratios matched minified-JS extremes, not typical
+  // payloads, and systematically over-estimated token counts.
   const trimmed = text.trimStart()
   const jsonLike = (trimmed.startsWith("{") || trimmed.startsWith("["))
     && /"[^"]+"\s*:/.test(text)
   const codeLike = !jsonLike
     && /```|^import |^export |^function |^const |^let |^var |^class |^interface |^type |^def |^fn |^pub |^use |^mod |^package /m.test(text)
 
-  const asciiPerToken = jsonLike ? 2 : codeLike ? 2.5 : 4
-  return Math.max(1, Math.ceil(ascii / asciiPerToken + cjk / 1.5))
+  const asciiPerToken = jsonLike ? 3.5 : codeLike ? 3.5 : 4
+  return Math.max(1, Math.ceil(ascii / asciiPerToken + cjk / 1.0))
 }
 
 interface TokenDist {
