@@ -461,7 +461,7 @@ function TokenCachePanel(props: {
           }
         }
         const totalInput = dist.system + dist.user + dist.agent + dist.toolCall + dist.toolResult
-        const overhead = Math.max(0, dist.apiInput - totalInput); if (overhead >= 50) dist.system += overhead
+        const overhead = Math.max(0, dist.apiInput - totalInput); if (overhead > 0) dist.system += overhead
         hasDistData = totalInput > 0 || dist.apiOutput > 0 || dist.apiInput > 0
       } catch {}
       const finalDist = hasDistData ? dist : lastDist(), finalHasDist = hasDistData || lastHasDist()
