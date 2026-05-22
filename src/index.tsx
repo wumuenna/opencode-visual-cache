@@ -467,7 +467,24 @@ function TokenCachePanel(props: {
           }
         }
         const totalInput = dist.system + dist.user + dist.agent + dist.toolCall + dist.toolResult
-        const overhead = Math.max(0, dist.apiInput - totalInput); if (overhead > 0) dist.system += overhead
+        const overhead = Math.max(0, dist.apiInput - totalInput)
+        if (overhead > 0) {
+          if (totalInput > 0) {
+            // 按各角色估算值的比例分摊 overhead，避免全部集中在单一类别
+            const r = (n: number) => n / totalInput
+            dist.system    += Math.round(overhead * r(dist.system))
+            dist.user      += Math.round(overhead * r(dist.user))
+            dist.agent     += Math.round(overhead * r(dist.agent))
+            dist.toolCall  += Math.round(overhead * r(dist.toolCall))
+            // 尾数归 toolResult 避免累积舍入误差
+            dist.toolResult += overhead - Math.round(overhead * r(dist.system))
+                               - Math.round(overhead * r(dist.user))
+                               - Math.round(overhead * r(dist.agent))
+                               - Math.round(overhead * r(dist.toolCall))
+          } else {
+            dist.system += overhead
+          }
+        }
         hasDistData = totalInput > 0 || dist.apiOutput > 0 || dist.apiInput > 0
       } catch {}
       const finalDist = hasDistData ? dist : lastDist(), finalHasDist = hasDistData || lastHasDist()
